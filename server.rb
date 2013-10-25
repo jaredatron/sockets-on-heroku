@@ -1,51 +1,10 @@
-p ARGV
-p ENV
 
-require 'pry'
-binding.pry
-exit!
-
+require "faye/websocket"
+require "sinatra"
 require 'redis'
-require 'em-websocket'
+require 'pry'
 
-
-
-
-SOCKETS = []
-
-PORT = ARGV.shift || '5000'
-
-# Creating a thread for the EM event loop
-Thread.new do
-
-  EventMachine.run do
-    # Creates a websocket listener
-    EventMachine::WebSocket.start(:host => '0.0.0.0', :port => PORT) do |ws|
-
-      redis = Redis.new
-
-      ws.onopen do
-        # When someone connects I want to add that socket to the SOCKETS array that
-        # I instantiated above
-        puts 'creating socket'
-        SOCKETS << ws
-      end
-
-      ws.onclose do
-        # Upon the close of the connection I remove it from my list of running sockets
-        puts 'closing socket'
-        SOCKETS.delete ws
-      end
-
-      ws.onmessage do |message|
-        puts "publishing event #{message.inspect}"
-        p redis.publish 'events', message
-        puts "done"
-      end
-
-    end
-  end
-end
+# require Bundler.root.join('event_bus')
 
 # Creating a thread for the redis subscribe block
 Thread.new do
@@ -54,9 +13,70 @@ Thread.new do
     on.message do |_, message|
      puts "sending message: #{message}"
      # Send out the message on each open socket
-     SOCKETS.each {|s| s.send message}
+     SocketServer::SOCKETS.each {|s| s.send message}
     end
   end
 end
 
-sleep
+
+
+Server = lambda do |env|
+  if SocketServer.websocket?(env)
+    SocketServer.call(env)
+  else
+    WebServer.call(env)
+  end
+end
+
+# Events = EventBus.new do |msg|
+#   puts "SENDING MESSAGE TO MY SOCKETS: #{msg.inspect}"
+#   SocketServer::SOCKETS.each{|s| s.send "Received message: #{event.data}" }
+# end
+
+
+
+class SocketServer
+
+  SOCKETS = Set.new
+
+  def self.websocket? env
+    Faye::WebSocket.websocket?(env)
+  end
+
+  def self.call env
+    new.call(env)
+  end
+
+  def redis
+    @redis ||= Redis.new
+  end
+
+  def call env
+    ws = Faye::WebSocket.new(env)
+
+    ws.on :open do |e|
+      SOCKETS.add ws
+    end
+
+    ws.on :close do |e|
+      SOCKETS.subtract [ws]
+    end
+
+    ws.on :message do |event|
+      puts "Received message: #{event.data.inspect}"
+      redis.publish 'events', event.data
+      # Events.send(event.data)
+      # SOCKETS.each{|s| s.send "Received message: #{event.data}" }
+    end
+
+    ws.rack_response
+  end
+end
+
+class WebServer < Sinatra::Base
+
+  get '/' do
+    erb :index
+  end
+
+end
