@@ -19,8 +19,6 @@ Thread.new do
   end
 end
 
-
-
 Server = lambda do |env|
   if SocketServer.websocket?(env)
     SocketServer.call(env)
@@ -28,13 +26,6 @@ Server = lambda do |env|
     WebServer.call(env)
   end
 end
-
-# Events = EventBus.new do |msg|
-#   puts "SENDING MESSAGE TO MY SOCKETS: #{msg.inspect}"
-#   SocketServer::SOCKETS.each{|s| s.send "Received message: #{event.data}" }
-# end
-
-
 
 class SocketServer
 
