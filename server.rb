@@ -4,11 +4,12 @@ require "sinatra"
 require 'redis'
 require 'pry'
 
-# require Bundler.root.join('event_bus')
+require Bundler.root.join('redis')
 
 # Creating a thread for the redis subscribe block
 Thread.new do
-  Redis.new.subscribe('events') do |on|
+  redis = NewRedisConnection.call
+  redis.subscribe('events') do |on|
     # When a message is published to 'ws'
     on.message do |_, message|
      puts "sending message: #{message}"
@@ -48,7 +49,7 @@ class SocketServer
   end
 
   def redis
-    @redis ||= Redis.new
+    @redis ||= NewRedisConnection.call
   end
 
   def call env

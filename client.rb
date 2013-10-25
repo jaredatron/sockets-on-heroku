@@ -1,8 +1,8 @@
 require 'websocket-eventmachine-client'
 require 'pry'
 
-# SERVER_URI = 'http://safe-peak-6565.herokuapp.com/'
-SERVER_URI = 'ws://localhost:5001'
+SERVER_URI = 'http://safe-peak-6565.herokuapp.com/'
+# SERVER_URI = 'ws://localhost:5001'
 
 EM.run do
 
