@@ -1,24 +1,34 @@
 require 'websocket-eventmachine-client'
 require 'pry'
 
-SERVER_URI = 'http://safe-peak-6565.herokuapp.com/'
-# SERVER_URI = 'ws://localhost:5000'
+# SERVER_URI = 'http://safe-peak-6565.herokuapp.com/'
+SERVER_URI = 'ws://localhost:5000'
 
 EM.run do
 
-  ws = WebSocket::EventMachine::Client.connect(:uri => SERVER_URI)
+  ws = nil
 
-  ws.onopen do
-    puts "Connected"
+  connect = -> do
+    ws = WebSocket::EventMachine::Client.connect(:uri => SERVER_URI)
+
+    ws.onopen do
+      puts "Connected"
+    end
+
+    ws.onmessage do |msg, type|
+      puts msg
+    end
+
+    ws.onclose do
+      puts "Disconnected"
+      EventMachine.next_tick do
+        connect.()
+      end
+    end
+
   end
 
-  ws.onmessage do |msg, type|
-    puts msg
-  end
-
-  ws.onclose do
-    puts "Disconnected"
-  end
+  connect.()
 
   # EventMachine.next_tick do
   #   ws.send "Hello Server!"

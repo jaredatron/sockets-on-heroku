@@ -2,6 +2,8 @@ require "faye/websocket"
 require "sinatra"
 require 'pry'
 
+require Bundler.root.join('event_bus')
+
 Server = lambda do |env|
   if SocketServer.websocket?(env)
     SocketServer.call(env)
@@ -9,6 +11,12 @@ Server = lambda do |env|
     WebServer.call(env)
   end
 end
+
+Events = EventBus.new do |msg|
+  puts "SENDING MESSAGE TO MY SOCKETS: #{msg.inspect}"
+  SocketServer::OPEN_SOCKETS.each{|s| s.send "Received message: #{event.data}" }
+end
+
 
 
 class SocketServer
@@ -36,7 +44,8 @@ class SocketServer
 
     ws.on :message do |event|
       puts "Received message: #{event.data.inspect}"
-      OPEN_SOCKETS.each{|s| s.send "Received message: #{event.data}" }
+      Events.send(event.data)
+      # OPEN_SOCKETS.each{|s| s.send "Received message: #{event.data}" }
     end
 
     ws.rack_response
