@@ -7,3 +7,4 @@ gem 'websocket-eventmachine-client'
 gem 'redis'
 # gem 'websocket-eventmachine-server', require: nil
 gem 'pry'
+gem 'em-websocket'
