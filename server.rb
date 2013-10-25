@@ -1,5 +1,15 @@
+p ARGV
+p ENV
+
+require 'pry'
+binding.pry
+exit!
+
 require 'redis'
 require 'em-websocket'
+
+
+
 
 SOCKETS = []
 
@@ -11,6 +21,9 @@ Thread.new do
   EventMachine.run do
     # Creates a websocket listener
     EventMachine::WebSocket.start(:host => '0.0.0.0', :port => PORT) do |ws|
+
+      redis = Redis.new
+
       ws.onopen do
         # When someone connects I want to add that socket to the SOCKETS array that
         # I instantiated above
@@ -26,7 +39,7 @@ Thread.new do
 
       ws.onmessage do |message|
         puts "publishing event #{message.inspect}"
-        p Redis.new.publish 'events', message
+        p redis.publish 'events', message
         puts "done"
       end
 

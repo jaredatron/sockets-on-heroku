@@ -8,3 +8,4 @@ gem 'redis'
 # gem 'websocket-eventmachine-server', require: nil
 gem 'pry'
 gem 'em-websocket'
+gem 'unicorn'
