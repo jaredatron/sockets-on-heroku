@@ -1,0 +1,99 @@
+<html>
+  <head>
+    <script>
+      // function connect() {
+      //   ws = new WebSocket(location.origin.replace(/^http/, 'ws'));
+      //   ws.onopen = function(event){
+      //     console.log('OPEN');
+      //   };
+      //   ws.onclose = function(event){
+      //     console.log('CLOSED');
+      //     setTimeout(connect, 1000);
+      //   };
+      //   ws.onmessage = function (event) {
+      //     console.log('RECIEVED: ', event.data);
+      //   };
+      // }
+      // connect();
+
+      Connection = (function(){
+        function Connection(callback){
+          this.openCallbacks = [];
+          this.host = location.origin.replace(/^http/, 'ws');
+          this.open();
+        }
+
+        Connection.prototype.open = function(callback){
+          console.log('OPENING SOCKET');
+          this.stayConnected = true;
+          createSocket(this, callback);
+          return this;
+        };
+
+        Connection.prototype.close = function(){
+          console.log('CLOSING SOCKET');
+          this.stayConnected = false;
+          if (this.socket){
+            this.socket.close();
+            delete this.socket;
+          }
+          return this;
+        };
+
+        Connection.prototype.send = function(message){
+          this.open(function(){
+            this.socket.send(JSON.stringify(message));
+          });
+          return this;
+        };
+
+        function createSocket(connection, callback) {
+          connection.openCallbacks.push(callback);
+
+          var socket = connection.socket;
+          if (socket){
+            if (socket.readyState == 1) callOpenCallbacks(connection);
+            if (!!~[0,1].indexOf(socket.readyState)) return connection;
+          }
+          console.log('CREATING NEW SOCKET')
+          socket = new WebSocket(connection.host);
+
+          socket.onopen = function onopen() {
+            console.log('SOCKET OPEN', socket);
+            connection.socket = socket;
+            callOpenCallbacks(connection);
+          }
+
+          socket.onclose = function(){
+            console.log('SOCKET CLOSED', socket);
+            if (connection.stayConnected) setTimeout(function(){
+              connection.open();
+            }, 500)
+          }
+
+          socket.onmessage = function(message) {
+            console.log('MESSAGE RECIEVED', message);
+          };
+
+          return connection;
+        };
+
+        function callOpenCallbacks(connection) {
+          while(connection.openCallbacks.length > 0){
+            var callback = connection.openCallbacks.shift();
+            if (typeof callback === 'function') callback.call(connection);
+          };
+        };
+
+        return Connection;
+      })();
+
+      C = new Connection;
+
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
+
+;

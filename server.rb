@@ -1,20 +1,52 @@
-require 'websocket-eventmachine-server'
+require "faye/websocket"
+require "sinatra"
+require 'pry'
 
-EM.run do
+Server = lambda do |env|
+  if SocketServer.websocket?(env)
+    SocketServer.call(env)
+  else
+    WebServer.call(env)
+  end
+end
 
-  WebSocket::EventMachine::Server.start(:host => "0.0.0.0", :port => 8080) do |ws|
-    ws.onopen do
-      puts "Client connected"
+
+class SocketServer
+
+  OPEN_SOCKETS = Set.new
+
+  def self.websocket? env
+    Faye::WebSocket.websocket?(env)
+  end
+
+  def self.call env
+    new.call(env)
+  end
+
+  def call env
+    ws = Faye::WebSocket.new(env)
+
+    ws.on :open do |e|
+      OPEN_SOCKETS.add ws
     end
 
-    ws.onmessage do |msg, type|
-      puts "Received message: #{msg}"
-      ws.send "you just said: #{msg}", :type => type
+    ws.on :close do |e|
+      OPEN_SOCKETS.subtract [ws]
     end
 
-    ws.onclose do
-      puts "Client disconnected"
+    ws.on :message do |event|
+      puts "Received message: #{event.data.inspect}"
+      OPEN_SOCKETS.each{|s| s.send "Received message: #{event.data.inspect}" }
     end
+
+    ws.rack_response
+  end
+end
+
+class WebServer < Sinatra::Base
+
+  get '/' do
+    erb :index
   end
 
 end
