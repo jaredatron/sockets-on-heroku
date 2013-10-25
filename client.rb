@@ -1,21 +1,12 @@
 require 'websocket-eventmachine-client'
 require 'pry'
 
-module UnbufferedKeyboardHandler
-  class << self
-    attr_accessor :ws
-  end
-  def receive_data(buffer)
-
-  end
-  def anon
-    Class.new
-  end
-end
+# SERVER_URI = 'http://safe-peak-6565.herokuapp.com/'
+SERVER_URI = 'ws://localhost:5000'
 
 EM.run do
 
-  ws = WebSocket::EventMachine::Client.connect(:uri => 'ws://localhost:8080')
+  ws = WebSocket::EventMachine::Client.connect(:uri => SERVER_URI)
 
   ws.onopen do
     puts "Connected"
