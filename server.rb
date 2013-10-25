@@ -12,7 +12,7 @@ Thread.new do
   redis.subscribe('events') do |on|
     # When a message is published to 'ws'
     on.message do |_, message|
-     puts "sending message: #{message}"
+     # puts "sending message: #{message}"
      # Send out the message on each open socket
      SocketServer::SOCKETS.each {|s| s.send message}
     end
@@ -64,7 +64,7 @@ class SocketServer
     end
 
     ws.on :message do |event|
-      puts "Received message: #{event.data.inspect}"
+      # puts "Received message: #{event.data.inspect}"
       redis.publish 'events', event.data
       # Events.send(event.data)
       # SOCKETS.each{|s| s.send "Received message: #{event.data}" }
