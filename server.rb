@@ -36,7 +36,7 @@ class SocketServer
 
     ws.on :message do |event|
       puts "Received message: #{event.data.inspect}"
-      OPEN_SOCKETS.each{|s| s.send "Received message: #{event.data.inspect}" }
+      OPEN_SOCKETS.each{|s| s.send "Received message: #{event.data}" }
     end
 
     ws.rack_response

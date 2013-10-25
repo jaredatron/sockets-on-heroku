@@ -24,14 +24,12 @@
         }
 
         Connection.prototype.open = function(callback){
-          console.log('OPENING SOCKET');
           this.stayConnected = true;
           createSocket(this, callback);
           return this;
         };
 
         Connection.prototype.close = function(){
-          console.log('CLOSING SOCKET');
           this.stayConnected = false;
           if (this.socket){
             this.socket.close();
@@ -72,7 +70,7 @@
           }
 
           socket.onmessage = function(message) {
-            console.log('MESSAGE RECIEVED', message);
+            console.log('MESSAGE RECIEVED', message.data);
           };
 
           return connection;
@@ -93,7 +91,6 @@
     </script>
   </head>
   <body>
+    There are <%= SocketServer::OPEN_SOCKETS.count %> sockets connected to this app instance.
   </body>
 </html>
-
-;
