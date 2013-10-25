@@ -2,19 +2,25 @@
 require "faye/websocket"
 require "sinatra"
 require 'redis'
-require 'pry'
 
-require Bundler.root.join('redis')
+def new_redis_connection
+  if ENV.has_key? "REDISCLOUD_URL"
+    uri = URI.parse(ENV["REDISCLOUD_URL"])
+    Redis.connect(
+      :host => uri.host,
+      :port => uri.port,
+      :password => uri.password
+    )
+  else
+    Redis.connect(db: 5)
+  end
+end
 
-# Creating a thread for the redis subscribe block
 Thread.new do
-  redis = NewRedisConnection.call
-  redis.subscribe('events') do |on|
-    # When a message is published to 'ws'
-    on.message do |_, message|
-     # puts "sending message: #{message}"
-     # Send out the message on each open socket
-     SocketServer::SOCKETS.each {|s| s.send message}
+  new_redis_connection.subscribe('events') do |on|
+    on.message do |_, event|
+      message = {type: 'event', event: event}.to_json
+      SocketServer.sockets.each{|ws| ws.send message}
     end
   end
 end
@@ -27,42 +33,46 @@ Server = lambda do |env|
   end
 end
 
-class SocketServer
+module SocketServer
 
-  SOCKETS = Set.new
+  def self.sockets
+    @sockets ||= []
+  end
 
   def self.websocket? env
     Faye::WebSocket.websocket?(env)
   end
 
+  def self.redis
+    @redis ||= new_redis_connection
+  end
+
   def self.call env
-    new.call(env)
-  end
-
-  def redis
-    @redis ||= NewRedisConnection.call
-  end
-
-  def call env
     ws = Faye::WebSocket.new(env)
 
     ws.on :open do |e|
-      SOCKETS.add ws
+      sockets << ws
     end
 
     ws.on :close do |e|
-      SOCKETS.subtract [ws]
+      sockets.delete ws
     end
 
-    ws.on :message do |event|
-      # puts "Received message: #{event.data.inspect}"
-      redis.publish 'events', event.data
-      # Events.send(event.data)
-      # SOCKETS.each{|s| s.send "Received message: #{event.data}" }
+    ws.on :message do |frame|
+      message = JSON.parse(frame.data)
+      case message['type']
+      when 'subscribe'
+
+      when 'unsubscribe'
+
+      when 'event'
+        redis.publish 'events', message['event']
+      end
     end
 
     ws.rack_response
   end
+
 end
 
 class WebServer < Sinatra::Base

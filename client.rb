@@ -12,11 +12,11 @@ EM.run do
     ws = WebSocket::EventMachine::Client.connect(:uri => SERVER_URI)
 
     ws.onopen do
-      puts "Connected"
+      puts "Connected to #{SERVER_URI}"
     end
 
     ws.onmessage do |msg, type|
-      puts msg
+      puts "Message: #{msg}"
     end
 
     ws.onclose do
@@ -34,16 +34,16 @@ EM.run do
   #   ws.send "Hello Server!"
   # end
 
-  buffer = []
-  receive_data = -> char do
-    if char == "\n"
-      ws.send buffer.join
-      buffer.clear
-    else
-      buffer.push char
-    end
-  end
+  # buffer = []
+  # receive_data = -> char do
+  #   if char == "\n"
+  #     ws.send buffer.join
+  #     buffer.clear
+  #   else
+  #     buffer.push char
+  #   end
+  # end
 
-  EM.open_keyboard(Module.new{define_method(:receive_data, receive_data)})
+  # EM.open_keyboard(Module.new{define_method(:receive_data, receive_data)})
 
 end
